@@ -36,7 +36,7 @@ def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_s
     # without going beyond its boundaries
     crop_coordinates_height = np.arange(start_positions_height, end_positions_height, step_size)
 
-    if not image_height - (crop_coordinates_height[-1] + crop_size) > thresh_size:
+    if not image_height - (crop_coordinates_height[-1] + crop_size) > 0:
         print("Warning")
     else:
         crop_coordinates_height = np.append(crop_coordinates_height, image_height - crop_size)
@@ -49,7 +49,7 @@ def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_s
     # This ensures that the cropping covers the entire width of the image
     # without going beyond its boundaries
     crop_coordinates_width = np.arange(start_positions_width, end_positions_width, step_size)
-    if not image_width - (crop_coordinates_width[-1] + crop_size) > thresh_size:
+    if not image_width - (crop_coordinates_width[-1] + crop_size) > 0:
         print("Warning")
     else:
         crop_coordinates_width = np.append(crop_coordinates_width, image_width - crop_size)
@@ -75,15 +75,16 @@ def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_s
 
 
 
-# Example usage:
-crop_size = 256
-step_size = 128
+
+#first handle for high resolution images
+crop_size_hr = 480
+step_size_hr = 240
 
 # Directory containing the input images
-input_folder = "dataset"
+input_folder = "dataset_hr"
 
 #save_folder = "dataset_cropped"
-save_folder = "dataset_cropped"
+save_folder = "dataset_cropped_hr"
 
 # Construct a file pattern to match PNG files in the input folder
 file_pattern = os.path.join(input_folder, '*.png')
@@ -97,9 +98,36 @@ sorted_files = sorted(matching_files)
 # Store the sorted list of file paths in img_list variable
 img_list = sorted_files
 
-# Define the crop size and step size
-crop_size = 480
-step_size = 240
+# Display the list of sorted image paths
+print("Sorted image paths:")
+for img_path in img_list:
+    print(img_path)
+    img_name, file_extension = os.path.splitext(os.path.basename(img_path))
+    image_name = remove_scaling_factor(img_name)
+    prepare_dataset(img_path, image_name, save_folder, crop_size_hr, step_size_hr, file_extension)
+
+
+#handle for low resolution images
+crop_size_lr = 120
+step_size_lr = 60
+
+# Directory containing the input images
+input_folder = "dataset_lr"
+
+#save_folder = "dataset_cropped"
+save_folder = "dataset_cropped_lr"
+
+# Construct a file pattern to match PNG files in the input folder
+file_pattern = os.path.join(input_folder, '*.png')
+
+# Find all PNG files in the input folder
+matching_files = glob.glob(file_pattern)
+
+# Sort the list of file paths alphabetically
+sorted_files = sorted(matching_files)
+
+# Store the sorted list of file paths in img_list variable
+img_list = sorted_files
 
 # Display the list of sorted image paths
 print("Sorted image paths:")
@@ -107,4 +135,4 @@ for img_path in img_list:
     print(img_path)
     img_name, file_extension = os.path.splitext(os.path.basename(img_path))
     image_name = remove_scaling_factor(img_name)
-    prepare_dataset(img_path, image_name, save_folder, crop_size, step_size, file_extension)
+    prepare_dataset(img_path, image_name, save_folder, crop_size_lr, step_size_lr, file_extension)
