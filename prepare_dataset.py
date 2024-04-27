@@ -1,11 +1,9 @@
 import os
 import cv2
 import numpy as np
-import os
 import glob
-import os.path 
-import os
 import re
+from tqdm import tqdm
 
 def remove_scaling_factor(image_path):
     # Extract the base filename from the image path
@@ -20,7 +18,7 @@ def remove_scaling_factor(image_path):
     return clean_name
 
 
-def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_size, file_extension):
+def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_size, file_extension, tqdm_desc=None):
     # Read the input image
     input_image = cv2.imread(input_image_path, cv2.IMREAD_UNCHANGED)
     image_height, image_width = input_image.shape[0:2]
@@ -28,7 +26,7 @@ def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_s
     # Generate coordinates for cropping
     #crop_coordinates_height = np.arange(0, image_height - crop_size + 1, step_size)
     # Calculate the starting positions for cropping along the height of the image
-    start_positions_height = 0  # Starting position for cropping
+    start_positions_height = 0  # Starting pxosition for cropping
     end_positions_height = image_height - crop_size + 1  # Ending position for cropping
 
     # Generate a range of starting positions with a step size of step_size
@@ -60,7 +58,7 @@ def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_s
     # Extract the file extension
 
     # Loop through all possible cropping positions
-    for start_height in crop_coordinates_height:
+    for start_height in tqdm(crop_coordinates_height, desc=tqdm_desc):
         for start_width in crop_coordinates_width:
             cnt += 1
             # Extract the cropped image
@@ -74,17 +72,16 @@ def prepare_dataset(input_image_path, image_name, save_folder, crop_size, step_s
             cv2.imwrite(output_file_path, cropped_image)
 
 
-
-
 #first handle for high resolution images
+#TODO: check for different crop and step size
 crop_size_hr = 480
 step_size_hr = 240
 
 # Directory containing the input images
-input_folder = "dataset_hr"
+input_folder = "data/hr"
 
 #save_folder = "dataset_cropped"
-save_folder = "dataset_cropped_hr"
+save_folder = "data/dataset_cropped/hr"
 
 # Construct a file pattern to match PNG files in the input folder
 file_pattern = os.path.join(input_folder, '*.png')
@@ -104,18 +101,19 @@ for img_path in img_list:
     print(img_path)
     img_name, file_extension = os.path.splitext(os.path.basename(img_path))
     image_name = remove_scaling_factor(img_name)
-    prepare_dataset(img_path, image_name, save_folder, crop_size_hr, step_size_hr, file_extension)
+    prepare_dataset(img_path, image_name, save_folder, crop_size_hr, step_size_hr, file_extension, tqdm_desc="Processing HR images")
 
 
 #handle for low resolution images
+#TODO: check for different crop and step size
 crop_size_lr = 120
 step_size_lr = 60
 
 # Directory containing the input images
-input_folder = "dataset_lr"
+input_folder = "data/lr"
 
 #save_folder = "dataset_cropped"
-save_folder = "dataset_cropped_lr"
+save_folder = "data/dataset_cropped/lr"
 
 # Construct a file pattern to match PNG files in the input folder
 file_pattern = os.path.join(input_folder, '*.png')
@@ -135,4 +133,4 @@ for img_path in img_list:
     print(img_path)
     img_name, file_extension = os.path.splitext(os.path.basename(img_path))
     image_name = remove_scaling_factor(img_name)
-    prepare_dataset(img_path, image_name, save_folder, crop_size_lr, step_size_lr, file_extension)
+    prepare_dataset(img_path, image_name, save_folder, crop_size_lr, step_size_lr, file_extension, tqdm_desc="Processing LR images")
