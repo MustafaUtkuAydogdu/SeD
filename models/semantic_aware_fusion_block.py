@@ -21,7 +21,7 @@ class SemanticAwareFusionBlock(nn.Module):
         self.GeLU = nn.GELU()
 
         #define 1x1 convolutions
-        self.increase_channels1 = nn.Conv2d(128, 1024, 1)
+        self.increase_channels1 = nn.Conv2d(256, 1024, 1)
 
     def forward(self, semantic_feature_maps, fs):
 
@@ -94,7 +94,7 @@ class SemanticAwareFusionBlock(nn.Module):
         print("out shape after permute", out.shape)
 
         #add the residual
-        output = out + fs_residual
+        output = torch.cat((out,fs_residual), dim=1)
         print("output shape after adding the residual", output.shape)
 
         #increase the channels
@@ -104,16 +104,11 @@ class SemanticAwareFusionBlock(nn.Module):
         return output
 
 
+if __name__ == "__main__":
+    model = SemanticAwareFusionBlock()
+    x = torch.randn(1, 1024, 14, 14)
+    sh = torch.randn(1, 1024, 14, 14)
 
-model = SemanticAwareFusionBlock()
-x = torch.randn(1, 1024, 14, 14)
-sh = torch.randn(1, 1024, 14, 14)
-
-with torch.no_grad():
-    out = model(x, sh)
-    print("out shape:", out.shape)
- 
-
-        
-[[1,1,1], [2,2,2]] 
-        
+    with torch.no_grad():
+        out = model(x, sh)
+        print("out shape:", out.shape)
