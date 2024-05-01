@@ -6,85 +6,102 @@ class PatchDiscriminator(nn.Module):
     def __init__(self, input_channels, num_filters=64, num_downscales=3):
         super().__init__()
         
-        layers = []
+        self.layers = []
         
         # First layer
-        layers.append(PatchDiscriminatorBlock(input_channels, num_filters))
+        self.layers.append(PatchDiscriminatorBlock(input_channels, num_filters))
         
-        # Intermediate layers
+        # Intermediate self.layers
         for i in range(num_downscales):
             in_channels = num_filters * 2 ** i
             out_channels = num_filters * 2 ** (i + 1)
             stride = 1 if i == (num_downscales - 1) else 2
-            layers.append(PatchDiscriminatorBlock(in_channels, out_channels))
+            self.layers.append(PatchDiscriminatorBlock(in_channels, out_channels))
         
         # Last layer
         in_channels = num_filters * 2 ** num_downscales
         out_channels = 1
-        layers.append(PatchDiscriminatorBlock(in_channels, out_channels))
+        self.layers.append(PatchDiscriminatorBlock(in_channels, out_channels))
         
-        self.model = nn.Sequential(*layers)
     
     def forward(self, x):
-        return self.model(x)
+        output = x
+
+        for layer in self.layers:
+            output = layer(output)
+
+        return output
     
 class PatchDiscriminatorWithSeD(nn.Module):
     def __init__(self, input_channels, num_filters=64, num_downscales=3):
         super().__init__()
         
-        layers = []
+        self.layers = []
         
         # First layer
-        layers.append(PatchDiscriminatorBlock(input_channels, num_filters))
+        self.layers.append(PatchDiscriminatorBlock(input_channels, num_filters))
         
-        # Intermediate layers
+        # Intermediate self.layers
         for i in range(num_downscales):
             in_channels = num_filters * 2 ** i
             out_channels = num_filters * 2 ** (i + 1)
             stride = 1 if i == (num_downscales - 1) else 2
-            layers.append(PatchDiscriminatorBlock(in_channels, out_channels, use_semfb=True))
+            self.layers.append(PatchDiscriminatorBlock(in_channels, out_channels, use_semfb=True,channel_size_changer_input_nc=in_channels))
         
         # Last layer
         in_channels = num_filters * 2 ** num_downscales
         out_channels = 1
-        layers.append(PatchDiscriminatorBlock(in_channels, out_channels))
-        
-        self.model = nn.Sequential(*layers)
+        self.layers.append(PatchDiscriminatorBlock(in_channels, out_channels))
     
-    def forward(self, x, fs):
-        return self.model(x)
+    def forward(self, semantic_feature_map, fs):
+
+        for layer in self.layers:
+            fs = layer(semantic_feature_map, fs)
+
+        return fs
     
     
 class PatchDiscriminatorBlock(nn.Module):
-    def __init__(self, input_channels, num_filters, use_semfb=False):
+    def __init__(self, input_channels, num_filters, use_semfb=False,channel_size_changer_input_nc=None):
         super().__init__()
         
         self.use_semfb = use_semfb
         if self.use_semfb:
-            self.semantic_aware_fusion_block = SemanticAwareFusionBlock()
+            self.semantic_aware_fusion_block = SemanticAwareFusionBlock(channel_size_changer_input_nc=channel_size_changer_input_nc)
             
-        self.layer = nn.Sequential(
-            nn.Conv2d(input_channels, num_filters, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(num_filters),
-            nn.LeakyReLU(0.2, inplace=True)
-        ) if not self.use_semfb else nn.Sequential(
-            self.semantic_aware_fusion_block,
-            nn.Conv2d(input_channels, num_filters, kernel_size=4, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(num_filters),
-            nn.LeakyReLU(0.2, inplace=True),
-        )
-        
+        self.conv1 = nn.Conv2d(input_channels, num_filters, kernel_size=4, stride=2, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(num_filters)
+        self.relu = nn.LeakyReLU(0.2, inplace=True)
+        if self.use_semfb:
+            self.conv2 = nn.Conv2d(num_filters, num_filters, kernel_size=4, stride=2, padding=1, bias=False)
+            self.bn2 = nn.BatchNorm2d(num_filters)
+            
     def forward(self, x, fs=None):
+        
         print("Input shape before block:", x.shape)
-        x = self.layer(x) if not self.use_semfb else self.layer(x, fs) #TODO: check correct ordering of x and fs
+        if self.use_semfb:
+            print("Entered sembf")
+            x = self.semantic_aware_fusion_block(x, fs)
+            x = self.conv1(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.conv2(x)
+            x = self.bn2(x)
+            x = self.relu(x)
+        else:
+            print("Entered else, x.shape : ", fs.shape)
+            x = self.conv1(fs)
+            x = self.bn1(x)
+            x = self.relu(x)
         print("Input shape after block:", x.shape)
         return x
 
 
+
 if __name__ == "__main__":
-    a = torch.randn(1, 3, 480, 480)
-    b = torch.randn(1,1024,14,14)
+    b = torch.randn(1, 128, 32, 32)
+    a = torch.randn(1,1024,16,16)
     model = PatchDiscriminatorWithSeD(3)
     with torch.no_grad():
-        output = model(tensor)
+        output = model(a,b)
         print(output.shape)

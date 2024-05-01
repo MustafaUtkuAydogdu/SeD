@@ -4,11 +4,11 @@ from attention import CrossAttention
 from attention import SelfAttention
 
 class SemanticAwareFusionBlock(nn.Module):
-    def __init__(self):
+    def __init__(self, channel_size_changer_input_nc):
         super().__init__()
         self.group_norm = nn.GroupNorm(32, 1024) #TODO: check for the number of groups
 
-        self.reduce_channels1 = nn.Conv2d(in_channels=1024, out_channels=128, kernel_size=1)
+        self.channel_size_changer1 = nn.Conv2d(in_channels=channel_size_changer_input_nc, out_channels=128, kernel_size=1)
         self.reduce_channels2 = nn.Conv2d(in_channels=1024, out_channels=128, kernel_size=1)
 
         self.layer_norm_1 = nn.LayerNorm(128)
@@ -25,6 +25,10 @@ class SemanticAwareFusionBlock(nn.Module):
 
     def forward(self, semantic_feature_maps, fs):
 
+        print("1111 - semantic_feature_maps shape", semantic_feature_maps.shape)
+        print("1111 - fs shape", fs.shape)
+
+
         # sh have shape batch,1024,x,x
         #feature maps (fs or fh) have shape batch x 128 
         final_permute_height = semantic_feature_maps.shape[2]
@@ -34,12 +38,14 @@ class SemanticAwareFusionBlock(nn.Module):
         print(fs.shape)
 
         #first handle S_h
-        fs = self.group_norm(fs)
-        print("sh shape after group norm", fs.shape)
+        semantic_feature_maps = self.group_norm(semantic_feature_maps)
+        print("semantic_feature_maps shape after group norm", semantic_feature_maps.shape)
 
         #reduce the channel dimensions for the feature maps
+        print("semantic feature maps shape before reduce channels--------------", semantic_feature_maps.shape)
+
         semantic_feature_maps = self.reduce_channels2(semantic_feature_maps)
-        print("feature maps shape after reduce channels", semantic_feature_maps.shape)
+        print("semantic_feature_maps shape after reduce channels", semantic_feature_maps.shape)
 
         #permute the dimensions
 
@@ -62,7 +68,7 @@ class SemanticAwareFusionBlock(nn.Module):
 
         #now handle fs or  fh
         #reduce the channel dimensions for the sh
-        fs = self.reduce_channels1(fs)
+        fs = self.channel_size_changer1(fs)
         print("sh shape after reduce channels", fs.shape)
 
 
@@ -94,6 +100,9 @@ class SemanticAwareFusionBlock(nn.Module):
         print("out shape after permute", out.shape)
 
         #add the residual
+        print("aaaaaaaa - out shape", out.shape)
+        print("aaaaaaaa - fs_residual shape", fs_residual.shape)
+
         output = torch.cat((out,fs_residual), dim=1)
         print("output shape after adding the residual", output.shape)
 
@@ -105,10 +114,10 @@ class SemanticAwareFusionBlock(nn.Module):
 
 
 if __name__ == "__main__":
-    model = SemanticAwareFusionBlock()
-    x = torch.randn(1, 1024, 14, 14)
-    sh = torch.randn(1, 1024, 14, 14)
+    model = SemanticAwareFusionBlock(channel_size_changer_input_nc=64)
+    semantic = torch.randn(1, 1024, 16, 16)
+    sh = torch.randn(1, 128, 32, 32)
 
     with torch.no_grad():
-        out = model(x, sh)
+        out = model(semantic, sh)
         print("out shape:", out.shape)

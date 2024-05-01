@@ -176,7 +176,7 @@ class CLIPRN50(nn.Module):
 #test the model
 model = CLIPRN50([3, 4, 6, 3], 1024, 32)
 model.eval()
-x = torch.randn(1, 3, 224, 224)
+x = torch.randn(1, 3, 256, 256)
 with torch.no_grad():
     out = model(x)
 
