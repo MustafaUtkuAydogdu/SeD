@@ -50,8 +50,8 @@ class RRDB(nn.Module):
         return out * 0.2 + x
 
 
-class RRDBNet(nn.Module):
-    def __init__(self, in_nc, out_nc, nf, nb, gc=32):
+class RRDBNet(nn.Module): 
+    def __init__(self, in_nc, out_nc, nf, nb, gc=32): # (3, 3, 64, 23, gc=32)
         super(RRDBNet, self).__init__()
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
 

@@ -4,7 +4,7 @@ from attention import CrossAttention
 from attention import SelfAttention
 
 class SemanticAwareFusionBlock(nn.Module):
-    def __init__(self, channel_size_changer_input_nc):
+    def __init__(self, channel_size_changer_input_nc=512):
         super().__init__()
         self.group_norm = nn.GroupNorm(32, 1024) #TODO: check for the number of groups
 
@@ -68,6 +68,8 @@ class SemanticAwareFusionBlock(nn.Module):
 
         #now handle fs or  fh
         #reduce the channel dimensions for the sh
+
+
         fs = self.channel_size_changer1(fs)
         print("sh shape after reduce channels", fs.shape)
 
@@ -114,7 +116,7 @@ class SemanticAwareFusionBlock(nn.Module):
 
 
 if __name__ == "__main__":
-    model = SemanticAwareFusionBlock(channel_size_changer_input_nc=64)
+    model = SemanticAwareFusionBlock(channel_size_changer_input_nc=128)
     semantic = torch.randn(1, 1024, 16, 16)
     sh = torch.randn(1, 128, 32, 32)
 
