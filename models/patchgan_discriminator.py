@@ -1,5 +1,7 @@
 import torch
+import sys
 import torch.nn as nn
+sys.path.append('/scratch/users/hpc-yekin/hpc_run/SeD/models')
 from semantic_aware_fusion_block import SemanticAwareFusionBlock
 
 class PatchDiscriminator(nn.Module):
@@ -8,10 +10,10 @@ class PatchDiscriminator(nn.Module):
         self.downsampler = DownSampler(input_channels, num_filters)
         self.final_conv = nn.Conv2d(num_filters * 8, 1, kernel_size=4, stride=1, padding=1)
         
-    def forward(self, x):
-        x = self.downsampler(x)
-        x = self.final_conv(x)
-        return x
+    def forward(self, fs):
+        fs = self.downsampler(fs)
+        fs = self.final_conv(fs)
+        return fs
     
 class DownSampler(nn.Module):
     #downsamples 4 times in a conv, bn, leaky relu fashion that halves the spatial dimensions in each step and doubles the number of filters
@@ -50,11 +52,8 @@ class PatchDiscriminatorWithSeD(nn.Module):
     def forward(self, semantic_feature_maps, fs):
         x = self.downsampler(fs)
         x = self.semantic_aware_fusion_block1(semantic_feature_maps, x)
-        print("x shape after semantic aware fusion block 1", x.shape)
         x = self.semantic_aware_fusion_block2(semantic_feature_maps, x)
-        print("x shape after semantic aware fusion block 2", x.shape)
         x = self.semantic_aware_fusion_block3(semantic_feature_maps, x)
-        print("x shape after semantic aware fusion block 3", x.shape)
         x = self.final_conv(x)
         return x
     
@@ -66,4 +65,3 @@ if __name__ == "__main__":
     model = PatchDiscriminator(3)
     with torch.no_grad():
         output = model(b)
-        print(output.shape)

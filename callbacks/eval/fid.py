@@ -42,7 +42,7 @@ class FIDCallback(pl.callbacks.Callback):
         actvs = []
         with torch.no_grad():
             for batch in tqdm(self.dataloader, desc=f"Calculating {self.dataset_type} FID on inpainted images", total=len(self.dataloader)):
-                inpainted_images = pl_module.inpaint(batch)["inpainted_image"]
+                inpainted_images = pl_module.make_high_resolution(batch)["image_lr"]
                 actv = self.inception(inpainted_images.to(self.device))
                 actvs.append(actv.cpu())
         actvs = torch.cat(actvs, dim=0).numpy()
@@ -58,7 +58,7 @@ class FIDCallback(pl.callbacks.Callback):
         actvs = []
         with torch.no_grad():
             for image_batch in tqdm(self.dataloader, desc=f"Calculating {self.dataset_type} FID on dataset images", total=len(self.dataloader)):
-                actv = self.inception(image_batch["image"].to(self.device))
+                actv = self.inception(image_batch["image_hr"].to(self.device))
                 actvs.append(actv.cpu())
         actvs = torch.cat(actvs, dim=0).numpy()
         mean = np.mean(actvs, axis=0)

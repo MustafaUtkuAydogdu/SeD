@@ -56,6 +56,12 @@ class ImageLoggerCallback(pl.callbacks.Callback):
         if self.tb_logger is None:
             raise ValueError('TensorBoard Logger is not found')    
 
+    def pad_image(self, image):
+        #write the code to zero pad the image so that we add 96 pixels on all sides
+        #image is of shape 3x64x64
+        #return the padded image of shape 3x256x256
+        return torch.nn.functional.pad(image, (96, 96, 96, 96), mode='constant', value=0)
+    
     @rank_zero_only
     def on_train_batch_start(self, trainer, pl_module, *args, **kwargs):
         current_step = trainer.global_step // 2 # x2 step on each iter due to GAN loss
@@ -66,10 +72,15 @@ class ImageLoggerCallback(pl.callbacks.Callback):
         results = pl_module.make_high_resolution(self.input_batch)
 
         grid_list = []
-        grid_list.append(torch.cat(get_labeled_images(results["image_lr"], 'darkgreen'), dim=2)[0])
+        image_lr = results["image_lr"]
+        padded_image_lr = self.pad_image(image_lr)
+        grid_list.append(torch.cat(get_labeled_images(padded_image_lr, 'darkgreen'), dim=2)[0])
         grid_list.append(torch.cat(get_labeled_images(results["image_hr"], 'black'), dim=2)[0])
         grid_list.append(torch.cat(get_labeled_images(results["generated_super_resolution_image"], 'darkred'), dim=2)[0])
 
+        print(results["image_lr"].shape, "image_lr")
+        print(results["image_hr"].shape, "image_hr")
+        print(results["generated_super_resolution_image"].shape, "generated_super_resolution_image")
         grid = torchvision.utils.make_grid(grid_list, padding=2, normalize=False, nrow = len(grid_list))
         self.tb_logger.add_image(f"{self.dataset_name}/high_resolution", grid, current_step)
         if self.wandb_logger is not None:

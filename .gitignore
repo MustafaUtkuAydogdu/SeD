@@ -7,3 +7,8 @@ callbacks/eval/__pycache__/fid.cpython-310.pyc
 callbacks/eval/__pycache__/lpips.cpython-310.pyc
 callbacks/logger/__pycache__/image_logger.cpython-310.pyc
 callbacks/eval/models/__pycache__/inception_v3.cpython-310.pyc
+submit_gpu_job.sh
+configs/__pycache__/*
+utils/__pycache__/*
+losses/__pycache__/*
+datasets/__pycache__/*

@@ -10,9 +10,9 @@ if accelerator == 'cpu':
 else:
     pl_trainer = dict(max_epochs=1000, accelerator=accelerator, log_every_n_steps=50, strategy=DDPStrategy(find_unused_parameters=True), devices=torch.cuda.device_count(), sync_batchnorm=True)  # CHECK strategy and find_unused_parameters!!!
 
-train_batch_size = 4
-val_batch_size = 16
-test_batch_size = 16
+train_batch_size = 32
+val_batch_size = 8
+test_batch_size = 8
 
 image_size = 256
 
@@ -26,16 +26,17 @@ dataset_module = dict(
     train_batch_size=train_batch_size,
     val_batch_size=val_batch_size,
     test_batch_size=test_batch_size,
-    train_dataset_config=dict(image_size=256, image_dir_hr="dataset_cropped_hr", image_dir_lr="dataset_cropped_lr", downsample_factor=4,mirror_augment_prob=0.5),
-    test_dataset_config=dict(image_size=256, image_dir_hr="dataset_cropped_hr", image_dir_lr="dataset_cropped_lr"),
+    train_dataset_config=dict(image_size=256, image_dir_hr="data/dataset_cropped/hr", image_dir_lr="data/dataset_cropped/lr", downsample_factor=4,mirror_augment_prob=0.5),
+    val_dataset_config=dict(image_size=256, image_dir_hr="data/evaluation/hr/manga109", image_dir_lr="data/evaluation/lr/manga109"),
+    test_dataset_config=dict(image_size=256, image_dir_hr="data/evaluation/hr/manga109", image_dir_lr="data/evaluation/lr/manga109"),
 )
 
 ##################
 ##### Losses #####
 ##################
-
+vgg_ckpt_path="/kuacc/users/hpc-yekin/hpc_run/difinpaint/DivInversionData/pretrained_models/vgg16.pth"
 loss_dict = dict(
-    VGG=dict(weight=1.0),
+    VGG=dict(weight=5e-5,model_config=dict(path=vgg_ckpt_path, output_layer_idx=23, resize_input=False)),
     Adversarial_G=dict(weight=1.0),
     MSE=dict(weight=1.0),
     Adversarial_D=dict(r1_gamma=10.0, r2_gamma=0.0)

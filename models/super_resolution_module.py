@@ -4,6 +4,7 @@ from models.rrdb import RRDBNet
 from models.patchgan_discriminator import PatchDiscriminatorWithSeD, PatchDiscriminator
 import importlib
 from torch.optim.lr_scheduler import MultiStepLR
+from feature_extractor_model import CLIPRN50
 
 class SuperResolutionModule(pl.LightningModule):
     def __init__(self, 
@@ -31,7 +32,7 @@ class SuperResolutionModule(pl.LightningModule):
         self.discriminator = PatchDiscriminator(3,64) if not use_sed_discriminator else PatchDiscriminatorWithSeD(3,64)
         self.discriminator.train()
 
-
+        self.use_sed_discriminator = use_sed_discriminator
         self.loss_dict = loss_dict
         self.discriminator_learning_rate = discriminator_learning_rate
         self.discriminator_decay_steps = discriminator_decay_steps
@@ -40,6 +41,8 @@ class SuperResolutionModule(pl.LightningModule):
         self.generator_learning_rate = generator_learning_rate
         self.generator_decay_steps = generator_decay_steps
         self.generator_decay_gamma = generator_decay_gamma
+        self.clip = CLIPRN50([3, 4, 6, 3], 1024, 32)
+        self.clip.freeze()
 
 
     def on_train_start(self):
@@ -48,7 +51,7 @@ class SuperResolutionModule(pl.LightningModule):
 
         losses = {}
         for loss_class, loss_config in self.loss_dict.items():
-            module = importlib.import_module("criteria.losses")
+            module = importlib.import_module("losses.loss")
             class_ = getattr(module, loss_class)
             loss_config["device"] = self.device
             loss_config["discriminator"] = self.discriminator
@@ -98,10 +101,17 @@ class SuperResolutionModule(pl.LightningModule):
         generated_super_resolution_image = self.generator(image_lr).to(self.device)
 
         image_hr = batch['image_hr'].to(self.device)
+        
+        if self.use_sed_discriminator:
+            semantic_feature_maps = self.clip(image_hr).to(self.device)
 
         loss_forward_dict = {
             "image": image_hr,
             "fake_image_final": generated_super_resolution_image,
+            "semantic_feature_maps": semantic_feature_maps
+            } if self.use_sed_discriminator else {
+            "image": image_hr,
+            "fake_image_final": generated_super_resolution_image
             }
         return loss_forward_dict
         

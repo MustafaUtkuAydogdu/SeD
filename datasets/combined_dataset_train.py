@@ -38,15 +38,15 @@ class CombinedDatasetTrain(CombinedDatasetBaseClass):
         hr_width, hr_height = image_hr.size
         lr_width, lr_height = image_lr.size
 
-        cropped_height = np.random.randint(0, hr_height - self.image_size + 1)
-        cropped_width = np.random.randint(0, hr_width - self.image_size + 1)
+        cropped_height = np.random.randint(0, lr_height - self.down_sampled_image_size + 1)
+        cropped_width = np.random.randint(0, lr_width - self.down_sampled_image_size + 1)
 
         image_hr_cropped = self.crop_image(np.array(image_hr), cropped_height, cropped_width)
         image_lr_cropped = self.crop_image(np.array(image_lr), cropped_height, cropped_width, hr_image=False)
 
         image_hr_cropped = self.preprocess_image(image_hr_cropped)
         image_lr_cropped = self.preprocess_image(image_lr_cropped)
-
+        
         data.update({'image_hr': image_hr_cropped, 'image_lr': image_lr_cropped})
         return data
     

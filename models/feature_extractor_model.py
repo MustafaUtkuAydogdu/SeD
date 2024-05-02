@@ -174,10 +174,11 @@ class CLIPRN50(nn.Module):
 
 
 #test the model
-model = CLIPRN50([3, 4, 6, 3], 1024, 32)
-model.eval()
-x = torch.randn(1, 3, 256, 256)
-with torch.no_grad():
-    out = model(x)
+if __name__ == "__main__":
+    model = CLIPRN50([3, 4, 6, 3], 1024, 32)
+    model.eval()
+    x = torch.randn(1, 3, 256, 256)
+    with torch.no_grad():
+        out = model(x)
 
-print(out.shape) # 1,1024,14,14 
+    print(out.shape) # 1,1024,16,16 

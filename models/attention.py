@@ -28,10 +28,6 @@ class SelfAttention(nn.Module):
         # Linearly project queries, keys, and values
         q,k,v = self.to_qkv(x).chunk(3, dim=-1) # -1 for the last dimension
 
-    
-        print("q", q.shape)
-        print("k", k.shape)
-        print("v", v.shape)
         # Reshape to [batch_size * heads, seq_len, dim_head]
         q = q.transpose(1, 2).reshape(-1, x.size(1), self.dim_head)
         k = k.transpose(1, 2).reshape(-1, x.size(1), self.dim_head)
@@ -51,11 +47,8 @@ class SelfAttention(nn.Module):
         # Apply output projection
         output = self.final_output(attn_output)
 
-        print("output1", output.shape)
-
         # Add residual connection
         output += x
-        print("output2", output.shape)
 
         return output
     

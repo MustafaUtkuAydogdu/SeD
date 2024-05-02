@@ -32,9 +32,12 @@ class Adversarial_G:
         self.weight = weight
         self.discriminator = discriminator
 
-    def __call__(self, fake_image_final, **others):
+    def __call__(self, fake_image_final, semantic_feature_maps=None, **others):
         fakes = fake_image_final 
-        fake_scores = self.discriminator(fakes)
+        if semantic_feature_maps is not None:
+            fake_scores = self.discriminator(semantic_feature_maps=semantic_feature_maps, fs=fakes)
+        else:
+            fake_scores = self.discriminator(fs=fakes)
         g_loss = F.softplus(-fake_scores).mean()
         return g_loss
     
@@ -55,14 +58,18 @@ class Adversarial_D:
         penalty = image_grad.pow(2).sum(dim=1).mean()
         return penalty
 
-    def __call__(self, image, fake_image_final, **others):
+    def __call__(self, image, fake_image_final, semantic_feature_maps=None, **others):
         reals = image.clone()
         fake_image_final_clone = fake_image_final.detach().clone()
         fakes =  fake_image_final_clone 
 
         reals.requires_grad = True # To calculate gradient penalty
-        real_scores = self.discriminator(reals)
-        fake_scores = self.discriminator(fakes)
+        if semantic_feature_maps is not None:
+            real_scores = self.discriminator(semantic_feature_maps=semantic_feature_maps, fs=reals)
+            fake_scores = self.discriminator(semantic_feature_maps=semantic_feature_maps, fs=fakes)
+        else:
+            real_scores = self.discriminator(fs=reals)
+            fake_scores = self.discriminator(fs=fakes)
         loss_fake = F.softplus(fake_scores).mean()
         loss_real = F.softplus(-real_scores).mean()
         d_loss = loss_fake + loss_real
